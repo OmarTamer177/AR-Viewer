@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>AR Drop</title>
-<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.8/aframe/build/aframe-ar.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -367,12 +368,17 @@
     background: #000;
   }
 
-  model-viewer {
+  #marker-scene-wrap,
+  #marker-scene-wrap a-scene {
     width: 100%;
     height: 100%;
-    --poster-color: #000;
-    --progress-bar-color: #c8ff57;
-    --progress-mask: rgba(0,0,0,0.6);
+  }
+
+  #marker-scene-wrap canvas,
+  #marker-scene-wrap video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
   }
 
   .viewer-top {
@@ -397,6 +403,11 @@
     font-size: 10px;
     color: rgba(255,255,255,0.4);
     letter-spacing: 1px;
+  }
+
+  .viewer-top,
+  .viewer-bottom {
+    z-index: 10;
   }
 
   .viewer-bottom {
@@ -429,6 +440,32 @@
   }
 
   .ar-btn:active { transform: scale(0.96); opacity: 0.88; }
+
+  .marker-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .marker-link,
+  .scale-btn {
+    font-family: var(--font);
+    font-size: 12px;
+    color: var(--text);
+    background: rgba(20,20,20,0.78);
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 9px 14px;
+    text-decoration: none;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+
+  .marker-link:hover,
+  .scale-btn:hover {
+    border-color: rgba(200,255,87,0.45);
+  }
 
   .viewer-model-name {
     font-size: 11px;
@@ -508,13 +545,14 @@
         </div>
         <div class="qr-step">
           <span class="qr-step-num">02</span>
-          <span>Tap <strong style="color:var(--text)">"View in AR"</strong> on the page that opens</span>
+          <span>Print or open the Hiro marker paper</span>
         </div>
         <div class="qr-step">
           <span class="qr-step-num">03</span>
-          <span>Point at a flat floor or surface — the model appears</span>
+          <span>Point the phone at the marker — the model appears</span>
         </div>
       </div>
+      <a class="marker-link" href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Open Hiro marker</a>
       <button class="reset-btn" onclick="resetToUpload()">↑ Upload another model</button>
     </div>
   </div>
@@ -531,7 +569,7 @@
     </div>
     <div class="how-step">
       <div class="how-num">3</div>
-      <span class="how-text">Scan &amp; place in AR</span>
+      <span class="how-text">Scan marker in AR</span>
     </div>
   </div>
 </div>
@@ -541,28 +579,17 @@
 <div id="viewer-page">
   <div class="viewer-top">
     <span class="viewer-logo">AR DROP</span>
-    <span class="viewer-hint">drag · pinch · tap</span>
+    <span class="viewer-hint">point at Hiro marker</span>
   </div>
 
-  <model-viewer
-    id="mv"
-    camera-controls
-    auto-rotate
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    ar-scale="auto"
-    shadow-intensity="1.2"
-    shadow-softness="0.9"
-    environment-image="neutral"
-    exposure="1"
-    loading="eager"
-    alt="3D model viewer with AR"
-  ></model-viewer>
+  <div id="marker-scene-wrap"></div>
 
   <div class="viewer-bottom">
-    <button class="ar-btn" onclick="launchAR()">
-      🔭&nbsp; View in AR
-    </button>
+    <div class="marker-actions">
+      <a class="marker-link" href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Open marker</a>
+      <button class="scale-btn" onclick="scaleModel(0.8)">Smaller</button>
+      <button class="scale-btn" onclick="scaleModel(1.25)">Bigger</button>
+    </div>
     <span class="viewer-model-name" id="viewer-name"></span>
   </div>
 </div>
@@ -573,34 +600,60 @@
 const params   = new URLSearchParams(location.search);
 const modelId  = params.get('m');
 const modelName = decodeURIComponent(params.get('n') || '3D Model');
+let markerModelScale = 0.5;
 
 if (modelId) {
   // Viewer mode
   document.getElementById('upload-page').style.display = 'none';
   const vp = document.getElementById('viewer-page');
   vp.style.display = 'block';
-  const mv = document.getElementById('mv');
-  mv.src = '/model/' + modelId;
+  startMarkerViewer(modelId);
   document.getElementById('viewer-name').textContent = modelName;
 } else {
   document.getElementById('upload-page').style.display = 'flex';
 }
 
-// ── AR LAUNCH ────────────────────────────────────────────────────
-function launchAR() {
-  const mv = document.getElementById('mv');
-  if (mv && mv.canActivateAR) {
-    mv.activateAR();
-  } else {
-    alert(
-      'AR is not supported on this device or browser.\n\n' +
-      '• Android: use Chrome\n' +
-      '• iPhone/iPad: use Safari\n\n' +
-      'You can still rotate and zoom the 3D model here.'
-    );
-  }
+// ── MARKER AR VIEWER ─────────────────────────────────────
+function startMarkerViewer(id) {
+  const modelUrl = '/model/' + encodeURIComponent(id);
+  const wrap = document.getElementById('marker-scene-wrap');
+
+  wrap.innerHTML = `
+    <a-scene
+      embedded
+      vr-mode-ui="enabled: false"
+      renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true"
+      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false"
+    >
+      <a-assets timeout="30000">
+        <a-asset-item id="uploaded-model" src="${modelUrl}"></a-asset-item>
+      </a-assets>
+      <a-marker
+        preset="hiro"
+        smooth="true"
+        smooth-count="10"
+        smooth-tolerance="0.01"
+        smooth-threshold="5"
+      >
+        <a-entity
+          id="marker-model"
+          gltf-model="#uploaded-model"
+          position="0 0 0"
+          scale="${markerModelScale} ${markerModelScale} ${markerModelScale}"
+        ></a-entity>
+      </a-marker>
+      <a-entity camera></a-entity>
+    </a-scene>
+  `;
 }
 
+function scaleModel(multiplier) {
+  markerModelScale = Math.max(0.05, Math.min(5, markerModelScale * multiplier));
+  const model = document.getElementById('marker-model');
+  if (model) {
+    model.setAttribute('scale', `${markerModelScale} ${markerModelScale} ${markerModelScale}`);
+  }
+}
 // ── UPLOAD SIDE ──────────────────────────────────────────────────
 const dropZone    = document.getElementById('drop-zone');
 const fileInput   = document.getElementById('file-input');
