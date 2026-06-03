@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>AR Drop</title>
-<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -28,9 +27,8 @@
   }
 
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); }
-  body.viewer-mode { margin: 0; overflow: hidden; }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ UPLOAD PAGE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── UPLOAD PAGE ── */
   #upload-page {
     min-height: 100vh;
     display: flex;
@@ -98,7 +96,7 @@
     animation: fadeUp 0.5s 0.25s forwards;
   }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ DROP ZONE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── DROP ZONE ── */
   .upload-card {
     width: 100%;
     max-width: 460px;
@@ -170,7 +168,7 @@
 
   #file-input { display: none; }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ PROGRESS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── PROGRESS ── */
   #progress-section { display: none; margin-top: 20px; }
 
   .progress-track {
@@ -204,7 +202,7 @@
     flex-shrink: 0;
   }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ QR RESULT ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── QR RESULT ── */
   #qr-section {
     display: none;
     width: 100%;
@@ -296,7 +294,7 @@
 
   .reset-btn:hover { color: var(--text); background: var(--surface2); }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ STEPS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── STEPS ── */
   .how-steps {
     display: flex;
     gap: 0;
@@ -345,7 +343,7 @@
     max-width: 86px;
   }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ ERROR ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── ERROR ── */
   .error-box {
     display: none;
     margin-top: 12px;
@@ -360,77 +358,21 @@
     line-height: 1.5;
   }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ VIEWER PAGE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── VIEWER PAGE ── */
   #viewer-page {
     display: none;
     width: 100vw;
     height: 100vh;
     position: relative;
-    background: transparent;
-    overflow: hidden;
-  }
-
-  #manual-camera,
-  #marker-scene-wrap,
-  #marker-scene-wrap a-scene {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: transparent !important;
-  }
-
-  #manual-camera {
-    object-fit: cover;
-    z-index: 0;
-  }
-
-  #marker-scene-wrap canvas,
-  canvas.a-canvas {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-    background: transparent !important;
-    z-index: 1 !important;
-  }
-
-  #marker-scene-wrap video,
-  video.arjs-video,
-  body > video:not(#manual-camera) {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    object-fit: cover;
-    z-index: 0 !important;
-  }
-
-  .viewer-start {
-    position: absolute;
-    inset: 0;
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    padding: 28px;
-    text-align: center;
     background: #000;
   }
 
-  .viewer-start p {
-    max-width: 320px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.55;
-  }
-
-  .viewer-start.is-hidden {
-    display: none;
+  model-viewer {
+    width: 100%;
+    height: 100%;
+    --poster-color: #000;
+    --progress-bar-color: #c8ff57;
+    --progress-mask: rgba(0,0,0,0.6);
   }
 
   .viewer-top {
@@ -455,11 +397,6 @@
     font-size: 10px;
     color: rgba(255,255,255,0.4);
     letter-spacing: 1px;
-  }
-
-  .viewer-top,
-  .viewer-bottom {
-    z-index: 10;
   }
 
   .viewer-bottom {
@@ -493,32 +430,6 @@
 
   .ar-btn:active { transform: scale(0.96); opacity: 0.88; }
 
-  .marker-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .marker-link,
-  .scale-btn {
-    font-family: var(--font);
-    font-size: 12px;
-    color: var(--text);
-    background: rgba(20,20,20,0.78);
-    border: 1px solid var(--border2);
-    border-radius: 999px;
-    padding: 9px 14px;
-    text-decoration: none;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-  }
-
-  .marker-link:hover,
-  .scale-btn:hover {
-    border-color: rgba(200,255,87,0.45);
-  }
-
   .viewer-model-name {
     font-size: 11px;
     font-family: var(--mono);
@@ -530,7 +441,7 @@
     white-space: nowrap;
   }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ KEYFRAMES ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── KEYFRAMES ── */
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -538,7 +449,7 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ MOBILE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
+  /* ── MOBILE ── */
   @media (max-width: 480px) {
     .wordmark { left: 20px; top: 20px; }
     .how-steps { flex-direction: column; align-items: flex-start; padding: 0 4px; }
@@ -550,18 +461,18 @@
 </head>
 <body>
 
-<!-- ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â UPLOAD PAGE ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â -->
+<!-- ════════════════════════ UPLOAD PAGE ════════════════════════ -->
 <div id="upload-page">
   <span class="wordmark">AR DROP</span>
 
-  <span class="hero-eyebrow">ÃƒÂ¢Ã…â€œÃ‚Â¦ instant augmented reality</span>
+  <span class="hero-eyebrow">✦ instant augmented reality</span>
   <h1>Drop a model,<br>share <em>reality.</em></h1>
   <p class="subtitle">Upload a 3D model, get a QR code. Anyone who scans it sees your model placed right in their real world.</p>
 
   <!-- Drop zone -->
   <div class="upload-card" id="upload-section">
     <div class="drop-zone" id="drop-zone">
-      <div class="drop-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦</div>
+      <div class="drop-icon">📦</div>
       <span class="drop-title">Drop your 3D model here</span>
       <span class="drop-sub">or click to browse</span>
       <div class="format-pills">
@@ -580,14 +491,14 @@
     </div>
     <div class="progress-label">
       <div class="spinner"></div>
-      <span id="progress-text">Uploading modelÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</span>
+      <span id="progress-text">Uploading model…</span>
     </div>
   </div>
 
   <!-- QR code result -->
   <div id="qr-section">
     <div class="qr-card">
-      <span class="qr-label">ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Ready to scan</span>
+      <span class="qr-label">✓ Ready to scan</span>
       <div id="qr-canvas-wrap"></div>
       <span class="qr-filename" id="qr-filename"></span>
       <div class="qr-instructions">
@@ -597,15 +508,14 @@
         </div>
         <div class="qr-step">
           <span class="qr-step-num">02</span>
-          <span>Print or open the Hiro marker paper</span>
+          <span>Tap <strong style="color:var(--text)">"View in AR"</strong> on the page that opens</span>
         </div>
         <div class="qr-step">
           <span class="qr-step-num">03</span>
-          <span>Point the phone at the marker ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â the model appears</span>
+          <span>Point at a flat floor or surface — the model appears</span>
         </div>
       </div>
-      <a class="marker-link" href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Open Hiro marker</a>
-      <button class="reset-btn" onclick="resetToUpload()">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬Ëœ Upload another model</button>
+      <button class="reset-btn" onclick="resetToUpload()">↑ Upload another model</button>
     </div>
   </div>
 
@@ -621,126 +531,77 @@
     </div>
     <div class="how-step">
       <div class="how-num">3</div>
-      <span class="how-text">Scan marker in AR</span>
+      <span class="how-text">Scan &amp; place in AR</span>
     </div>
   </div>
 </div>
 
 
-<!-- ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â VIEWER PAGE ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â -->
+<!-- ════════════════════════ VIEWER PAGE ════════════════════════ -->
 <div id="viewer-page">
   <div class="viewer-top">
     <span class="viewer-logo">AR DROP</span>
-    <span class="viewer-hint">point at Hiro marker</span>
+    <span class="viewer-hint">drag · pinch · tap</span>
   </div>
 
-  <video id="manual-camera" autoplay muted playsinline webkit-playsinline></video>
-  <div id="marker-scene-wrap"></div>
-  <div class="viewer-start" id="viewer-start">
-    <button class="ar-btn" onclick="startViewerAR()">Start Marker AR</button>
-    <p>Allow camera access, then point your phone at the printed Hiro marker.</p>
-    <span class="viewer-model-name" id="viewer-status">Waiting to start camera</span>
-  </div>
+  <model-viewer
+    id="mv"
+    camera-controls
+    auto-rotate
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-scale="auto"
+    shadow-intensity="1.2"
+    shadow-softness="0.9"
+    environment-image="neutral"
+    exposure="1"
+    loading="eager"
+    alt="3D model viewer with AR"
+  ></model-viewer>
 
   <div class="viewer-bottom">
-    <div class="marker-actions">
-      <a class="marker-link" href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Open marker</a>
-      <button class="scale-btn" onclick="scaleModel(0.8)">Smaller</button>
-      <button class="scale-btn" onclick="scaleModel(1.25)">Bigger</button>
-    </div>
+    <button class="ar-btn" onclick="launchAR()">
+      🔭&nbsp; View in AR
+    </button>
     <span class="viewer-model-name" id="viewer-name"></span>
   </div>
 </div>
 
 
 <script>
-// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ ROUTING ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+// ── ROUTING ──────────────────────────────────────────────────────
 const params   = new URLSearchParams(location.search);
 const modelId  = params.get('m');
 const modelName = decodeURIComponent(params.get('n') || '3D Model');
-let markerModelScale = 0.5;
 
 if (modelId) {
   // Viewer mode
-  document.body.classList.add('viewer-mode');
   document.getElementById('upload-page').style.display = 'none';
   const vp = document.getElementById('viewer-page');
   vp.style.display = 'block';
+  const mv = document.getElementById('mv');
+  mv.src = '/model/' + modelId;
   document.getElementById('viewer-name').textContent = modelName;
 } else {
   document.getElementById('upload-page').style.display = 'flex';
 }
 
-// MARKER AR VIEWER
-async function startViewerAR() {
-  const status = document.getElementById('viewer-status');
-  status.textContent = 'Starting camera...';
-
-  try {
-    await startCameraPreview();
-    startMarkerViewer(modelId);
-    document.getElementById('viewer-start').classList.add('is-hidden');
-  } catch (err) {
-    status.textContent = 'Camera failed: ' + err.message;
+// ── AR LAUNCH ────────────────────────────────────────────────────
+function launchAR() {
+  const mv = document.getElementById('mv');
+  if (mv && mv.canActivateAR) {
+    mv.activateAR();
+  } else {
+    alert(
+      'AR is not supported on this device or browser.\n\n' +
+      '• Android: use Chrome\n' +
+      '• iPhone/iPad: use Safari\n\n' +
+      'You can still rotate and zoom the 3D model here.'
+    );
   }
 }
 
-async function startCameraPreview() {
-  const video = document.getElementById('manual-camera');
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new Error('browser does not support camera access');
-  }
-
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: 'environment' } },
-    audio: false,
-  });
-
-  video.srcObject = stream;
-  await video.play();
-}
-
-function startMarkerViewer(id) {
-  const modelUrl = '/model/' + encodeURIComponent(id);
-  const wrap = document.getElementById('marker-scene-wrap');
-
-  wrap.innerHTML = `
-    <a-scene
-      embedded
-      vr-mode-ui="enabled: false"
-      renderer="alpha: true; logarithmicDepthBuffer: true; precision: medium; antialias: true"
-      arjs="trackingMethod: best; sourceType: webcam; videoTexture: true; debugUIEnabled: false"
-    >
-      <a-assets timeout="30000">
-        <a-asset-item id="uploaded-model" src="${modelUrl}"></a-asset-item>
-      </a-assets>
-      <a-marker
-        preset="hiro"
-        smooth="true"
-        smooth-count="10"
-        smooth-tolerance="0.01"
-        smooth-threshold="5"
-      >
-        <a-entity
-          id="marker-model"
-          gltf-model="#uploaded-model"
-          position="0 0 0"
-          scale="${markerModelScale} ${markerModelScale} ${markerModelScale}"
-        ></a-entity>
-      </a-marker>
-      <a-entity camera></a-entity>
-    </a-scene>
-  `;
-}
-
-function scaleModel(multiplier) {
-  markerModelScale = Math.max(0.05, Math.min(5, markerModelScale * multiplier));
-  const model = document.getElementById('marker-model');
-  if (model) {
-    model.setAttribute('scale', `${markerModelScale} ${markerModelScale} ${markerModelScale}`);
-  }
-}
-// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ UPLOAD SIDE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+// ── UPLOAD SIDE ──────────────────────────────────────────────────
 const dropZone    = document.getElementById('drop-zone');
 const fileInput   = document.getElementById('file-input');
 const uploadSec   = document.getElementById('upload-section');
@@ -783,14 +644,14 @@ async function handleFile(file) {
   hideError();
 
   if (file.size > 40 * 1024 * 1024) {
-    showError('File too large ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â max 40 MB. Try compressing at gltf.report');
+    showError('File too large — max 40 MB. Try compressing at gltf.report');
     return;
   }
 
   uploadSec.style.display = 'none';
   howSteps.style.opacity  = '0';
   progressSec.style.display = 'block';
-  setProgress(8, 'Uploading modelÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦');
+  setProgress(8, 'Uploading model…');
 
   try {
     const formData = new FormData();
@@ -800,7 +661,7 @@ async function handleFile(file) {
     const result = await new Promise((resolve, reject) => {
       xhr.upload.addEventListener('progress', e => {
         if (e.lengthComputable) {
-          setProgress(Math.min(90, (e.loaded / e.total) * 100), 'Uploading modelÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦');
+          setProgress(Math.min(90, (e.loaded / e.total) * 100), 'Uploading model…');
         }
       });
       xhr.addEventListener('load', () => {
@@ -815,12 +676,12 @@ async function handleFile(file) {
           reject(new Error(`Server error ${xhr.status}`));
         }
       });
-      xhr.addEventListener('error', () => reject(new Error('Network error ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â check your connection')));
+      xhr.addEventListener('error', () => reject(new Error('Network error — check your connection')));
       xhr.open('POST', '/upload');
       xhr.send(formData);
     });
 
-    setProgress(100, 'Generating QR codeÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦');
+    setProgress(100, 'Generating QR code…');
     await sleep(250);
 
     showQR(result.id, file.name);
