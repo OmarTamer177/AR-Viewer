@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AR Drop</title>
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #f0ede8;
+    --muted: #888;
+    --accent: #c8ff57;
+    --accent-dim: rgba(200,255,87,0.10);
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'Space Mono', monospace;
+    --r: 12px;
+    --r-lg: 20px;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); }
+
+  /* ── UPLOAD PAGE ── */
+  #upload-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #upload-page::before {
+    content: '';
+    position: absolute;
+    top: -180px; left: 50%;
+    transform: translateX(-50%);
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(200,255,87,0.055) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .wordmark {
+    position: absolute;
+    top: 28px; left: 32px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.05s forwards;
+  }
+
+  h1 {
+    font-size: clamp(34px, 6vw, 62px);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -2px;
+    text-align: center;
+    max-width: 680px;
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.15s forwards;
+  }
+
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.65;
+    margin-bottom: 44px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.25s forwards;
+  }
+
+  /* ── DROP ZONE ── */
+  .upload-card {
+    width: 100%;
+    max-width: 460px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.35s forwards;
+  }
+
+  .drop-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--r-lg);
+    padding: 48px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .drop-zone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent-dim);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .drop-zone:hover::after,
+  .drop-zone.dragging::after { opacity: 1; }
+  .drop-zone:hover { border-color: var(--accent); }
+  .drop-zone.dragging { border-color: var(--accent); transform: scale(1.01); }
+
+  .drop-icon {
+    width: 52px; height: 52px;
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    background: var(--surface2);
+    position: relative; z-index: 1;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .drop-zone:hover .drop-icon { border-color: rgba(200,255,87,0.5); transform: translateY(-3px); }
+
+  .drop-title { font-size: 14px; font-weight: 500; position: relative; z-index: 1; }
+  .drop-sub   { font-size: 12px; color: var(--muted); position: relative; z-index: 1; }
+
+  .format-pills {
+    display: flex; gap: 6px;
+    position: relative; z-index: 1;
+    margin-top: 6px;
+  }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  #file-input { display: none; }
+
+  /* ── PROGRESS ── */
+  #progress-section { display: none; margin-top: 20px; }
+
+  .progress-track {
+    height: 1.5px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .spinner {
+    width: 10px; height: 10px;
+    border: 1.5px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* ── QR RESULT ── */
+  #qr-section {
+    display: none;
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .qr-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    animation: fadeUp 0.35s forwards;
+  }
+
+  .qr-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  #qr-canvas-wrap {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    line-height: 0;
+  }
+
+  .qr-filename {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-align: center;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .qr-instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: var(--r);
+    border: 1px solid var(--border);
+  }
+
+  .qr-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .qr-step-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,255,87,0.2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .reset-btn {
+    font-family: var(--font);
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+  }
+
+  .reset-btn:hover { color: var(--text); background: var(--surface2); }
+
+  /* ── STEPS ── */
+  .how-steps {
+    display: flex;
+    gap: 0;
+    margin-top: 32px;
+    width: 100%;
+    max-width: 460px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.45s forwards;
+  }
+
+  .how-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    position: relative;
+  }
+
+  .how-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: calc(50% + 16px);
+    right: calc(-50% + 16px);
+    height: 1px;
+    background: var(--border);
+  }
+
+  .how-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--accent);
+    background: var(--surface2);
+    position: relative; z-index: 1;
+  }
+
+  .how-text {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+    max-width: 86px;
+  }
+
+  /* ── ERROR ── */
+  .error-box {
+    display: none;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #ff7070;
+    font-family: var(--mono);
+    text-align: center;
+    padding: 10px 14px;
+    background: rgba(255,100,100,0.07);
+    border-radius: 8px;
+    border: 1px solid rgba(255,100,100,0.18);
+    line-height: 1.5;
+  }
+
+  /* ── VIEWER PAGE ── */
+  #viewer-page {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background: #000;
+  }
+
+  model-viewer {
+    width: 100%;
+    height: 100%;
+    --poster-color: #000;
+    --progress-bar-color: #c8ff57;
+    --progress-mask: rgba(0,0,0,0.6);
+  }
+
+  .viewer-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: max(16px, env(safe-area-inset-top)) 20px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .viewer-logo {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .viewer-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+  }
+
+  .viewer-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 24px 24px max(28px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 32px;
+    background: var(--accent);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 50px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.3px;
+    transition: transform 0.12s, opacity 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ar-btn:active { transform: scale(0.96); opacity: 0.88; }
+
+  .viewer-model-name {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 1px;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── KEYFRAMES ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    .wordmark { left: 20px; top: 20px; }
+    .how-steps { flex-direction: column; align-items: flex-start; padding: 0 4px; }
+    .how-step { flex-direction: row; text-align: left; align-items: flex-start; }
+    .how-step:not(:last-child)::after { display: none; }
+    .how-text { max-width: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ UPLOAD PAGE ════════════════════════ -->
+<div id="upload-page">
+  <span class="wordmark">AR DROP</span>
+
+  <span class="hero-eyebrow">✦ instant augmented reality</span>
+  <h1>Drop a model,<br>share <em>reality.</em></h1>
+  <p class="subtitle">Upload a 3D model, get a QR code. Anyone who scans it sees your model placed right in their real world.</p>
+
+  <!-- Drop zone -->
+  <div class="upload-card" id="upload-section">
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon">📦</div>
+      <span class="drop-title">Drop your 3D model here</span>
+      <span class="drop-sub">or click to browse</span>
+      <div class="format-pills">
+        <span class="pill">.GLB</span>
+        <span class="pill">.GLTF</span>
+      </div>
+    </div>
+    <div class="error-box" id="error-box"></div>
+    <input type="file" id="file-input" accept=".glb,.gltf">
+  </div>
+
+  <!-- Upload progress -->
+  <div id="progress-section" style="width:100%;max-width:460px">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-label">
+      <div class="spinner"></div>
+      <span id="progress-text">Uploading model…</span>
+    </div>
+  </div>
+
+  <!-- QR code result -->
+  <div id="qr-section">
+    <div class="qr-card">
+      <span class="qr-label">✓ Ready to scan</span>
+      <div id="qr-canvas-wrap"></div>
+      <span class="qr-filename" id="qr-filename"></span>
+      <div class="qr-instructions">
+        <div class="qr-step">
+          <span class="qr-step-num">01</span>
+          <span>Scan the QR code with any phone camera</span>
+        </div>
+        <div class="qr-step">
+          <span class="qr-step-num">02</span>
+          <span>Tap <strong style="color:var(--text)">"View in AR"</strong> on the page that opens</span>
+        </div>
+        <div class="qr-step">
+          <span class="qr-step-num">03</span>
+          <span>Point at a flat floor or surface — the model appears</span>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetToUpload()">↑ Upload another model</button>
+    </div>
+  </div>
+
+  <!-- How it works steps -->
+  <div class="how-steps" id="how-steps">
+    <div class="how-step">
+      <div class="how-num">1</div>
+      <span class="how-text">Upload your .glb file</span>
+    </div>
+    <div class="how-step">
+      <div class="how-num">2</div>
+      <span class="how-text">Get an instant QR code</span>
+    </div>
+    <div class="how-step">
+      <div class="how-num">3</div>
+      <span class="how-text">Scan &amp; place in AR</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════ VIEWER PAGE ════════════════════════ -->
+<div id="viewer-page">
+  <div class="viewer-top">
+    <span class="viewer-logo">AR DROP</span>
+    <span class="viewer-hint">drag · pinch · tap</span>
+  </div>
+
+  <model-viewer
+    id="mv"
+    camera-controls
+    auto-rotate
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-scale="auto"
+    shadow-intensity="1.2"
+    shadow-softness="0.9"
+    environment-image="neutral"
+    exposure="1"
+    loading="eager"
+    alt="3D model viewer with AR"
+  ></model-viewer>
+
+  <div class="viewer-bottom">
+    <button class="ar-btn" onclick="launchAR()">
+      🔭&nbsp; View in AR
+    </button>
+    <span class="viewer-model-name" id="viewer-name"></span>
+  </div>
+</div>
+
+
+<script>
+// ── ROUTING ──────────────────────────────────────────────────────
+const params   = new URLSearchParams(location.search);
+const modelId  = params.get('m');
+const modelName = decodeURIComponent(params.get('n') || '3D Model');
+
+if (modelId) {
+  // Viewer mode
+  document.getElementById('upload-page').style.display = 'none';
+  const vp = document.getElementById('viewer-page');
+  vp.style.display = 'block';
+  const mv = document.getElementById('mv');
+  mv.src = '/model/' + modelId;
+  document.getElementById('viewer-name').textContent = modelName;
+} else {
+  document.getElementById('upload-page').style.display = 'flex';
+}
+
+// ── AR LAUNCH ────────────────────────────────────────────────────
+function launchAR() {
+  const mv = document.getElementById('mv');
+  if (mv && mv.canActivateAR) {
+    mv.activateAR();
+  } else {
+    alert(
+      'AR is not supported on this device or browser.\n\n' +
+      '• Android: use Chrome\n' +
+      '• iPhone/iPad: use Safari\n\n' +
+      'You can still rotate and zoom the 3D model here.'
+    );
+  }
+}
+
+// ── UPLOAD SIDE ──────────────────────────────────────────────────
+const dropZone    = document.getElementById('drop-zone');
+const fileInput   = document.getElementById('file-input');
+const uploadSec   = document.getElementById('upload-section');
+const progressSec = document.getElementById('progress-section');
+const progressFill = document.getElementById('progress-fill');
+const progressTxt  = document.getElementById('progress-text');
+const qrSection   = document.getElementById('qr-section');
+const howSteps    = document.getElementById('how-steps');
+const errorBox    = document.getElementById('error-box');
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragging');
+  const f = e.dataTransfer.files[0];
+  if (f && (f.name.endsWith('.glb') || f.name.endsWith('.gltf'))) {
+    handleFile(f);
+  } else {
+    showError('Please drop a .glb or .gltf file.');
+  }
+});
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = 'block';
+}
+
+function hideError() {
+  errorBox.style.display = 'none';
+  errorBox.textContent = '';
+}
+
+async function handleFile(file) {
+  hideError();
+
+  if (file.size > 40 * 1024 * 1024) {
+    showError('File too large — max 40 MB. Try compressing at gltf.report');
+    return;
+  }
+
+  uploadSec.style.display = 'none';
+  howSteps.style.opacity  = '0';
+  progressSec.style.display = 'block';
+  setProgress(8, 'Uploading model…');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    const result = await new Promise((resolve, reject) => {
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) {
+          setProgress(Math.min(90, (e.loaded / e.total) * 100), 'Uploading model…');
+        }
+      });
+      xhr.addEventListener('load', () => {
+        try {
+          const json = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(json);
+          } else {
+            reject(new Error(json.error || `Server error ${xhr.status}`));
+          }
+        } catch {
+          reject(new Error(`Server error ${xhr.status}`));
+        }
+      });
+      xhr.addEventListener('error', () => reject(new Error('Network error — check your connection')));
+      xhr.open('POST', '/upload');
+      xhr.send(formData);
+    });
+
+    setProgress(100, 'Generating QR code…');
+    await sleep(250);
+
+    showQR(result.id, file.name);
+
+  } catch (err) {
+    progressSec.style.display = 'none';
+    uploadSec.style.display   = 'block';
+    howSteps.style.opacity    = '1';
+    showError('Upload failed: ' + err.message);
+  }
+}
+
+function setProgress(pct, label) {
+  progressFill.style.width = pct + '%';
+  progressTxt.textContent  = label;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function showQR(id, fileName) {
+  progressSec.style.display = 'none';
+  howSteps.style.display    = 'none';
+
+  const base     = location.origin + location.pathname;
+  const name     = encodeURIComponent(fileName.replace(/\.(glb|gltf)$/i, ''));
+  const viewerURL = `${base}?m=${encodeURIComponent(id)}&n=${name}`;
+
+  const wrap = document.getElementById('qr-canvas-wrap');
+  wrap.innerHTML = '';
+  new QRCode(wrap, {
+    text: viewerURL,
+    width: 220,
+    height: 220,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+
+  document.getElementById('qr-filename').textContent = fileName;
+  qrSection.style.display = 'block';
+}
+
+function resetToUpload() {
+  qrSection.style.display   = 'none';
+  uploadSec.style.display   = 'block';
+  howSteps.style.display    = 'flex';
+  howSteps.style.opacity    = '1';
+  fileInput.value           = '';
+  hideError();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "ar-drop",
+  "version": "1.0.0",
+  "description": "Upload a 3D model, get a QR code, view in AR",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
