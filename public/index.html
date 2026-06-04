@@ -856,10 +856,11 @@ function drawHiroThumb() {
 function loadMarkerScripts(cb) {
   if (markerARLoaded) { cb(); return; }
 
-  const arjsVersion = '3.4.8';
   const scripts = [
     // Three.js r128 (matches AR.js requirement)
     'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    // AR.js jsartoolkit5 — marker tracking core
+    'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js',
   ];
 
   // We load them sequentially because GLTFLoader depends on THREE
@@ -869,9 +870,9 @@ function loadMarkerScripts(cb) {
       const gltf = document.createElement('script');
       gltf.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
       gltf.onload = () => {
-        // Load AR.js marker tracking
+        // Load AR.js marker tracking (separate from location-only build)
         const ar = document.createElement('script');
-        ar.src = `https://raw.githack.com/AR-js-org/AR.js/${arjsVersion}/three.js/build/ar-threex.js`;
+        ar.src = 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex.js';
         ar.onload = () => { markerARLoaded = true; cb(); };
         ar.onerror = () => showMarkerError('Failed to load AR.js');
         document.head.appendChild(ar);
@@ -985,19 +986,10 @@ function initMarkerScene() {
   scene.add(dirLight);
 
   // ── AR.js context
-  const arToolkitSource = new THREEx.ArToolkitSource({
-    sourceType: 'webcam',
-    sourceWidth: window.innerWidth > window.innerHeight ? 640 : 480,
-    sourceHeight: window.innerWidth > window.innerHeight ? 480 : 640,
-    displayWidth: window.innerWidth,
-    displayHeight: window.innerHeight,
-  });
+  const arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
   const arToolkitContext = new THREEx.ArToolkitContext({
-    cameraParametersUrl: `https://raw.githack.com/AR-js-org/AR.js/${arjsVersion}/data/data/camera_para.dat`,
+    cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/master/data/data/camera_para.dat',
     detectionMode: 'mono',
-    maxDetectionRate: 30,
-    canvasWidth: 640,
-    canvasHeight: 480,
   });
 
   arToolkitSource.init(() => {
@@ -1023,27 +1015,22 @@ function initMarkerScene() {
 
   // ── Marker root — the GLB will be parented to this
   const markerRoot = new THREE.Group();
-  markerRoot.visible = false;
   scene.add(markerRoot);
 
   const arMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
     type: 'preset',
+    patternUrl: null,
     preset: 'hiro',
   });
 
   // Track marker visibility for hint card / status
+  let modelAdded = false;
   let lastVisible = false;
 
   // ── Load GLB model
   const loader = new THREE.GLTFLoader();
   const modelUrl = '/model/' + modelId;
   let loadedModel = null;
-
-  function attachModelToMarker() {
-    if (loadedModel && !markerRoot.children.includes(loadedModel)) {
-      markerRoot.add(loadedModel);
-    }
-  }
 
   loader.load(
     modelUrl,
@@ -1065,7 +1052,7 @@ function initMarkerScene() {
         -center.z * scale
       );
 
-      attachModelToMarker();
+      modelAdded = true;
     },
     undefined,
     (err) => { showMarkerError('Could not load model: ' + err.message); }
@@ -1108,7 +1095,10 @@ function initMarkerScene() {
           status.textContent = '✓ Marker found';
           status.classList.add('found');
 
-          attachModelToMarker();
+          // Attach model to marker when first seen
+          if (loadedModel && modelAdded && !markerRoot.children.includes(loadedModel)) {
+            markerRoot.add(loadedModel);
+          }
         } else {
           hint.classList.remove('hidden');
           status.textContent = 'Scanning for marker…';
