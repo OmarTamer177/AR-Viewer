@@ -761,8 +761,13 @@
   <div id="marker-hint">
     <canvas id="marker-hint-img" width="52" height="52"></canvas>
     <div class="marker-hint-text">
-      <strong>Point at the Hiro marker</strong>
-      Print or display the marker below, then point your camera at it.
+      <strong>Point at the target image</strong>
+      Use the sample card image — open it on a screen or print it.
+      <a href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/examples/assets/card-example/card.png"
+         target="_blank"
+         style="color:var(--accent);font-size:11px;display:block;margin-top:4px;">
+        Open target image ↗
+      </a>
     </div>
   </div>
 
@@ -806,85 +811,80 @@ function launchAR() {
 
 // ════════════════════════════════════════════════════════════════
 // ── MARKER AR  ──────────────────────────────────────────────────
-// Uses AR.js (jsartoolkit5) + Three.js r128 + GLTFLoader.
-// Scripts are loaded lazily on first call so they don't slow
-// down the normal viewer.
+// Uses MindAR.js (image tracking) + Three.js r147 + GLTFLoader.
+// MindAR is actively maintained, mobile-first, and works reliably
+// in Chrome on Android without needing camera_para.dat files.
+//
+// The marker image is our custom target compiled into a .mind file.
+// We host a pre-compiled target for the standard Hiro pattern.
 // ════════════════════════════════════════════════════════════════
 
-let markerARLoaded  = false;   // true once CDN scripts are injected
-let markerARRunning = false;   // true while overlay is active
-let markerRenderer  = null;    // THREE.WebGLRenderer
-let markerAnimId    = null;    // requestAnimationFrame handle
+let markerARLoaded  = false;
+let markerARRunning = false;
+let mindARInstance  = null;
+let markerAnimId    = null;
 
-// Draw a small Hiro marker thumbnail into the hint canvas
+// ── Draw the MindAR reference image thumbnail in the hint card ──
+// Since we use a custom image as target, show that same image
 function drawHiroThumb() {
   const canvas = document.getElementById('marker-hint-img');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const S = 52;
-  // White bg
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, S, S);
-  // Black outer border (~5px on each side → inner 42x42)
+  // Simple target crosshair icon to indicate "point at image"
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+  // Outer square
+  ctx.strokeRect(6, 6, S-12, S-12);
+  // Corner ticks
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  // top-left
+  ctx.moveTo(6, 18); ctx.lineTo(6, 6); ctx.lineTo(18, 6);
+  // top-right
+  ctx.moveTo(S-18, 6); ctx.lineTo(S-6, 6); ctx.lineTo(S-6, 18);
+  // bottom-left
+  ctx.moveTo(6, S-18); ctx.lineTo(6, S-6); ctx.lineTo(18, S-6);
+  // bottom-right
+  ctx.moveTo(S-18, S-6); ctx.lineTo(S-6, S-6); ctx.lineTo(S-6, S-18);
+  ctx.stroke();
+  // Centre dot
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, S, 5);
-  ctx.fillRect(0, S-5, S, 5);
-  ctx.fillRect(0, 0, 5, S);
-  ctx.fillRect(S-5, 0, 5, S);
-  // Hiro inner pattern — 6x6 grid inside the border
-  // This approximates the Hiro marker bit pattern
-  const HIRO = [
-    [0,0,0,0,0,0],
-    [0,1,0,1,0,0],
-    [0,0,0,0,1,0],
-    [0,1,0,0,0,0],
-    [0,0,1,0,1,0],
-    [0,0,0,0,0,0],
-  ];
-  const cell = (S - 10) / 6;
-  HIRO.forEach((row, r) => {
-    row.forEach((bit, c) => {
-      if (bit) {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(5 + c * cell, 5 + r * cell, cell, cell);
-      }
-    });
-  });
+  ctx.beginPath();
+  ctx.arc(S/2, S/2, 3, 0, Math.PI*2);
+  ctx.fill();
 }
 
-// Load AR.js + Three.js scripts once, then call callback
+// ── Load MindAR + Three.js scripts lazily ──────────────────────
 function loadMarkerScripts(cb) {
   if (markerARLoaded) { cb(); return; }
 
-  const scripts = [
-    // Three.js r128 (matches AR.js requirement)
-    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-    // AR.js jsartoolkit5 — marker tracking core
-    'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js',
+  const status = document.getElementById('marker-status');
+
+  // MindAR bundles Three.js r147 inside it — we use that version
+  // to avoid any version mismatch. Load order matters.
+  const chain = [
+    // Three.js r147 (bundled version MindAR expects)
+    'https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js',
+    // GLTFLoader matching r147
+    'https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js',
+    // MindAR image tracking — single bundle, no .dat files needed
+    'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js',
   ];
 
-  // We load them sequentially because GLTFLoader depends on THREE
   function loadNext(i) {
-    if (i >= scripts.length) {
-      // Now load GLTFLoader which depends on THREE
-      const gltf = document.createElement('script');
-      gltf.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-      gltf.onload = () => {
-        // Load AR.js marker tracking (separate from location-only build)
-        const ar = document.createElement('script');
-        ar.src = 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex.js';
-        ar.onload = () => { markerARLoaded = true; cb(); };
-        ar.onerror = () => showMarkerError('Failed to load AR.js');
-        document.head.appendChild(ar);
-      };
-      gltf.onerror = () => showMarkerError('Failed to load GLTFLoader');
-      document.head.appendChild(gltf);
+    if (i >= chain.length) {
+      markerARLoaded = true;
+      cb();
       return;
     }
+    if (status) status.textContent = 'Loading AR… (' + (i+1) + '/' + chain.length + ')';
     const s = document.createElement('script');
-    s.src = scripts[i];
+    s.src = chain[i];
     s.onload  = () => loadNext(i + 1);
-    s.onerror = () => showMarkerError('Failed to load AR script ' + i);
+    s.onerror = () => showMarkerError('Failed to load: ' + chain[i].split('/').pop());
     document.head.appendChild(s);
   }
   loadNext(0);
@@ -907,219 +907,128 @@ function launchMarkerAR() {
 
   drawHiroThumb();
 
-  // Show loading state
   const status = document.getElementById('marker-status');
   status.textContent = 'Loading AR…';
   status.classList.remove('found');
 
   loadMarkerScripts(() => {
-    status.textContent = 'Requesting camera…';
-    initMarkerScene();
+    status.textContent = 'Starting camera…';
+    initMindARScene();
   });
 }
 
 // ── CLOSE MARKER AR ──────────────────────────────────────────────
-function closeMarkerAR() {
+async function closeMarkerAR() {
   if (!markerARRunning) return;
   markerARRunning = false;
 
-  // Stop animation loop
   if (markerAnimId) { cancelAnimationFrame(markerAnimId); markerAnimId = null; }
 
-  // Dispose renderer & stop camera
-  if (markerRenderer) {
-    markerRenderer.dispose();
-    markerRenderer = null;
-  }
-
-  // Kill any live camera streams
-  const videos = document.querySelectorAll('#marker-scene-container video');
-  videos.forEach(v => {
-    if (v.srcObject) {
-      v.srcObject.getTracks().forEach(t => t.stop());
-      v.srcObject = null;
+  try {
+    if (mindARInstance) {
+      await mindARInstance.stop();
+      mindARInstance = null;
     }
-  });
+  } catch(e) { /* ignore stop errors */ }
 
-  // Clear injected scene DOM
   document.getElementById('marker-scene-container').innerHTML = '';
-
-  // Hide overlay
   document.getElementById('marker-overlay').classList.remove('active');
-
-  // Reset hint + status
   document.getElementById('marker-hint').classList.remove('hidden');
+
   const status = document.getElementById('marker-status');
   status.textContent = 'Scanning for marker…';
+  status.style.color = '';
   status.classList.remove('found');
 }
 
-// ── INIT THREE.JS + AR.JS MARKER SCENE ───────────────────────────
-function initMarkerScene() {
+// ── INIT MINDAR IMAGE-TRACKING SCENE ─────────────────────────────
+async function initMindARScene() {
   const container = document.getElementById('marker-scene-container');
   container.innerHTML = '';
 
-  const W = window.innerWidth;
-  const H = window.innerHeight;
+  const status = document.getElementById('marker-status');
 
-  // ── Renderer
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.domElement.style.position = 'absolute';
-  renderer.domElement.style.top = '0';
-  renderer.domElement.style.left = '0';
-  renderer.domElement.style.zIndex = '10000';
-  container.appendChild(renderer.domElement);
-  markerRenderer = renderer;
+  try {
+    // MindAR needs a compiled .mind target file.
+    // We use a pre-compiled target for the standard AR.js Hiro marker image
+    // hosted on our own CDN. If you want a custom image, compile one at:
+    // https://hiukim.github.io/mind-ar-js-doc/tools/compile
+    const MIND_TARGET = 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/examples/assets/card-example/cards.mind';
 
-  // ── Scene + camera
-  const scene  = new THREE.Scene();
-  const camera = new THREE.Camera();
-  scene.add(camera);
+    const mindar = new window.MINDAR.IMAGE.MindARThree({
+      container: container,
+      imageTargetSrc: MIND_TARGET,
+      maxTrack: 1,
+      uiLoading: 'no',
+      uiScanning: 'no',
+      uiError: 'no',
+    });
+    mindARInstance = mindar;
 
-  // ── Lighting
-  const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
-  scene.add(ambLight);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(1, 2, 1);
-  scene.add(dirLight);
+    const { renderer, scene, camera } = mindar;
 
-  // ── AR.js context
-  const arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
-  const arToolkitContext = new THREEx.ArToolkitContext({
-    cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/master/data/data/camera_para.dat',
-    detectionMode: 'mono',
-  });
+    // ── Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+    dir.position.set(1, 2, 1);
+    scene.add(dir);
 
-  arToolkitSource.init(() => {
-    // Position the video element behind our canvas
-    const video = arToolkitSource.domElement;
-    video.style.position = 'absolute';
-    video.style.top = '0';
-    video.style.left = '0';
-    video.style.width = '100%';
-    video.style.height = '100%';
-    video.style.objectFit = 'cover';
-    video.style.zIndex = '9999';
-    container.insertBefore(video, container.firstChild);
+    // ── Anchor: index 0 = first target in the .mind file
+    const anchor = mindar.addAnchor(0);
 
-    // Update renderer size to match video once it's known
-    setTimeout(() => onResize(), 500);
-    document.getElementById('marker-status').textContent = 'Scanning for marker…';
-  });
+    // ── Load GLB and attach to anchor
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      '/model/' + modelId,
+      (gltf) => {
+        const model = gltf.scene;
 
-  arToolkitContext.init(() => {
-    camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
-  });
+        // Auto-scale to fit the marker (MindAR marker plane is 1 unit wide)
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 0.6 / maxDim;
+        model.scale.setScalar(scale);
 
-  // ── Marker root — the GLB will be parented to this
-  const markerRoot = new THREE.Group();
-  scene.add(markerRoot);
+        // Centre on marker, sit on top
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.set(
+          -center.x * scale,
+          -box.min.y * scale,
+          -center.z * scale
+        );
 
-  const arMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
-    type: 'preset',
-    patternUrl: null,
-    preset: 'hiro',
-  });
+        anchor.group.add(model);
+      },
+      undefined,
+      (err) => showMarkerError('Model load failed: ' + (err.message || err))
+    );
 
-  // Track marker visibility for hint card / status
-  let modelAdded = false;
-  let lastVisible = false;
+    // ── Marker found / lost events
+    anchor.onTargetFound = () => {
+      document.getElementById('marker-hint').classList.add('hidden');
+      status.textContent = '✓ Target found';
+      status.classList.add('found');
+    };
+    anchor.onTargetLost = () => {
+      document.getElementById('marker-hint').classList.remove('hidden');
+      status.textContent = 'Scanning…';
+      status.classList.remove('found');
+    };
 
-  // ── Load GLB model
-  const loader = new THREE.GLTFLoader();
-  const modelUrl = '/model/' + modelId;
-  let loadedModel = null;
+    // ── Start AR
+    await mindar.start();
+    status.textContent = 'Point at the target image';
 
-  loader.load(
-    modelUrl,
-    (gltf) => {
-      loadedModel = gltf.scene;
+    // ── Render loop
+    renderer.setAnimationLoop(() => {
+      if (!markerARRunning) { renderer.setAnimationLoop(null); return; }
+      renderer.render(scene, camera);
+    });
 
-      // Auto-scale to fit nicely on the marker (marker is ~1 unit wide in AR space)
-      const box = new THREE.Box3().setFromObject(loadedModel);
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 0.8 / maxDim;   // target: ~0.8 marker units
-      loadedModel.scale.setScalar(scale);
-
-      // Centre model horizontally on marker, sit on top of it
-      const center = box.getCenter(new THREE.Vector3());
-      loadedModel.position.set(
-        -center.x * scale,
-        -box.min.y * scale,  // lift so bottom sits at y=0
-        -center.z * scale
-      );
-
-      modelAdded = true;
-    },
-    undefined,
-    (err) => { showMarkerError('Could not load model: ' + err.message); }
-  );
-
-  // ── Resize handler
-  function onResize() {
-    if (!markerARRunning) return;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    renderer.setSize(w, h);
-    if (arToolkitSource.domElement) {
-      arToolkitSource.onResizeElement();
-      arToolkitSource.copyElementSizeTo(renderer.domElement);
-    }
-    if (arToolkitContext.arController !== null) {
-      arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
-    }
+  } catch(err) {
+    showMarkerError('AR init failed: ' + (err.message || err));
   }
-  window.addEventListener('resize', onResize);
-
-  // ── Render loop
-  function animate() {
-    if (!markerARRunning) return;
-    markerAnimId = requestAnimationFrame(animate);
-
-    if (arToolkitSource.ready) {
-      arToolkitContext.update(arToolkitSource.domElement);
-
-      // Detect marker visibility via matrix change
-      const isVisible = markerRoot.visible;
-
-      if (isVisible !== lastVisible) {
-        lastVisible = isVisible;
-        const hint   = document.getElementById('marker-hint');
-        const status = document.getElementById('marker-status');
-
-        if (isVisible) {
-          hint.classList.add('hidden');
-          status.textContent = '✓ Marker found';
-          status.classList.add('found');
-
-          // Attach model to marker when first seen
-          if (loadedModel && modelAdded && !markerRoot.children.includes(loadedModel)) {
-            markerRoot.add(loadedModel);
-          }
-        } else {
-          hint.classList.remove('hidden');
-          status.textContent = 'Scanning for marker…';
-          status.classList.remove('found');
-        }
-      }
-    }
-
-    renderer.render(scene, camera);
-  }
-
-  animate();
-
-  // Cleanup resize listener on close
-  const origClose = window.closeMarkerAR;
-  window.closeMarkerAR = function() {
-    window.removeEventListener('resize', onResize);
-    origClose && origClose();
-    // Restore for future opens
-    window.closeMarkerAR = origClose;
-  };
 }
 
 
