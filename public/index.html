@@ -856,35 +856,26 @@ function drawHiroThumb() {
 function loadMarkerScripts(cb) {
   if (markerARLoaded) { cb(); return; }
 
-  const scripts = [
-    // Three.js r128 (matches AR.js requirement)
+  // Load sequentially: Three.js → GLTFLoader → AR.js (all from stable CDNs)
+  const chain = [
+    // Three.js r128 — AR.js requires exactly this version
     'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-    // AR.js jsartoolkit5 — marker tracking core
-    'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js',
+    // GLTFLoader for r128 (must match Three version)
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js',
+    // AR.js three.js build — jsDelivr is stable, no raw.githack flakiness
+    'https://cdn.jsdelivr.net/npm/ar.js@2.2.2/three.js/build/ar-threex.js',
   ];
 
-  // We load them sequentially because GLTFLoader depends on THREE
   function loadNext(i) {
-    if (i >= scripts.length) {
-      // Now load GLTFLoader which depends on THREE
-      const gltf = document.createElement('script');
-      gltf.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-      gltf.onload = () => {
-        // Load AR.js marker tracking (separate from location-only build)
-        const ar = document.createElement('script');
-        ar.src = 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex.js';
-        ar.onload = () => { markerARLoaded = true; cb(); };
-        ar.onerror = () => showMarkerError('Failed to load AR.js');
-        document.head.appendChild(ar);
-      };
-      gltf.onerror = () => showMarkerError('Failed to load GLTFLoader');
-      document.head.appendChild(gltf);
+    if (i >= chain.length) {
+      markerARLoaded = true;
+      cb();
       return;
     }
     const s = document.createElement('script');
-    s.src = scripts[i];
+    s.src = chain[i];
     s.onload  = () => loadNext(i + 1);
-    s.onerror = () => showMarkerError('Failed to load AR script ' + i);
+    s.onerror = () => showMarkerError('Failed to load AR script: ' + chain[i].split('/').pop());
     document.head.appendChild(s);
   }
   loadNext(0);
@@ -986,10 +977,21 @@ function initMarkerScene() {
   scene.add(dirLight);
 
   // ── AR.js context
-  const arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
+  const arToolkitSource = new THREEx.ArToolkitSource({
+    sourceType: 'webcam',
+    // Request highest res the phone supports for better detection
+    sourceWidth:  1280,
+    sourceHeight: 960,
+    displayWidth:  window.innerWidth,
+    displayHeight: window.innerHeight,
+  });
   const arToolkitContext = new THREEx.ArToolkitContext({
-    cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/master/data/data/camera_para.dat',
+    // Stable jsDelivr-hosted camera params
+    cameraParametersUrl: 'https://cdn.jsdelivr.net/npm/ar.js@2.2.2/data/data/camera_para.dat',
     detectionMode: 'mono',
+    // Larger processing canvas = better detection at distance
+    canvasWidth:  640,
+    canvasHeight: 480,
   });
 
   arToolkitSource.init(() => {
