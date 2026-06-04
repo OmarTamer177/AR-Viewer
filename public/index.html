@@ -410,11 +410,20 @@
     gap: 10px;
   }
 
+  /* ── BUTTON ROW (new: two buttons side by side) ── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
   .ar-btn {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 15px 32px;
+    padding: 15px 28px;
     background: var(--accent);
     color: #0a0a0a;
     border: none;
@@ -426,9 +435,32 @@
     letter-spacing: -0.3px;
     transition: transform 0.12s, opacity 0.12s;
     -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
   }
 
-  .ar-btn:active { transform: scale(0.96); opacity: 0.88; }
+  /* Marker button: outlined style to visually distinguish */
+  .marker-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px 22px;
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid rgba(200,255,87,0.45);
+    border-radius: 50px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.3px;
+    transition: transform 0.12s, background 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+
+  .marker-btn:hover  { background: rgba(200,255,87,0.08); border-color: var(--accent); }
+  .ar-btn:active     { transform: scale(0.96); opacity: 0.88; }
+  .marker-btn:active { transform: scale(0.96); opacity: 0.88; }
 
   .viewer-model-name {
     font-size: 11px;
@@ -439,6 +471,139 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* ════════════════════════════════════════════
+     ── MARKER AR OVERLAY ──
+     Full-screen overlay that sits on top of everything.
+     Camera feed → canvas → Three.js renders GLB on marker.
+  ════════════════════════════════════════════ */
+  #marker-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000;
+    flex-direction: column;
+  }
+
+  #marker-overlay.active { display: flex; }
+
+  /* The AR.js scene fills the full overlay */
+  #marker-overlay a-scene,
+  #marker-overlay a-scene canvas {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important; left: 0 !important;
+  }
+
+  /* HUD on top of the AR scene */
+  .marker-hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 10001;
+    padding: max(16px, env(safe-area-inset-top)) 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .marker-hud-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .marker-close-btn {
+    pointer-events: all;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+    line-height: 1;
+  }
+
+  .marker-close-btn:active { background: rgba(255,255,255,0.15); }
+
+  /* Status pill at the bottom */
+  .marker-status {
+    position: absolute;
+    bottom: max(32px, env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.55);
+    background: rgba(0,0,0,0.5);
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .marker-status.found {
+    color: var(--accent);
+    border-color: rgba(200,255,87,0.3);
+  }
+
+  /* Marker hint card — shown before marker is found */
+  #marker-hint {
+    position: absolute;
+    bottom: max(90px, calc(env(safe-area-inset-bottom) + 70px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    background: rgba(10,10,10,0.88);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: none;
+    transition: opacity 0.4s;
+    max-width: calc(100vw - 40px);
+  }
+
+  #marker-hint.hidden { opacity: 0; }
+
+  #marker-hint-img {
+    width: 52px; height: 52px;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+  }
+
+  .marker-hint-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+
+  .marker-hint-text strong {
+    display: block;
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
   }
 
   /* ── KEYFRAMES ── */
@@ -456,6 +621,8 @@
     .how-step { flex-direction: row; text-align: left; align-items: flex-start; }
     .how-step:not(:last-child)::after { display: none; }
     .how-text { max-width: none; }
+    .btn-row { flex-direction: column; gap: 8px; }
+    .ar-btn, .marker-btn { width: 100%; justify-content: center; }
   }
 </style>
 </head>
@@ -560,22 +727,57 @@
   ></model-viewer>
 
   <div class="viewer-bottom">
-    <button class="ar-btn" onclick="launchAR()">
-      🔭&nbsp; View in AR
-    </button>
+    <!-- Two AR buttons: native AR (unchanged) + new marker AR -->
+    <div class="btn-row">
+      <button class="ar-btn" onclick="launchAR()">
+        🔭&nbsp; View in AR
+      </button>
+      <button class="marker-btn" onclick="launchMarkerAR()">
+        ◈&nbsp; On Marker
+      </button>
+    </div>
     <span class="viewer-model-name" id="viewer-name"></span>
   </div>
 </div>
 
 
+<!-- ════════════════════════ MARKER AR OVERLAY ════════════════════════
+     Loaded lazily when user taps "On Marker".
+     AR.js + Three.js r128 + GLTFLoader — all from CDN.
+     The <a-scene> is injected by JS so the heavy scripts only load on demand.
+════════════════════════════════════════════════════════════════════ -->
+<div id="marker-overlay">
+
+  <!-- HUD: logo + close -->
+  <div class="marker-hud">
+    <span class="marker-hud-title">AR DROP · MARKER</span>
+    <button class="marker-close-btn" onclick="closeMarkerAR()" aria-label="Close marker AR">✕</button>
+  </div>
+
+  <!-- AR scene injected here by JS -->
+  <div id="marker-scene-container" style="position:absolute;inset:0;z-index:10000;"></div>
+
+  <!-- Hint card: shows the Hiro marker thumbnail + instruction -->
+  <div id="marker-hint">
+    <canvas id="marker-hint-img" width="52" height="52"></canvas>
+    <div class="marker-hint-text">
+      <strong>Point at the Hiro marker</strong>
+      Print or display the marker below, then point your camera at it.
+    </div>
+  </div>
+
+  <!-- Status pill -->
+  <div class="marker-status" id="marker-status">Scanning for marker…</div>
+</div>
+
+
 <script>
 // ── ROUTING ──────────────────────────────────────────────────────
-const params   = new URLSearchParams(location.search);
-const modelId  = params.get('m');
+const params    = new URLSearchParams(location.search);
+const modelId   = params.get('m');
 const modelName = decodeURIComponent(params.get('n') || '3D Model');
 
 if (modelId) {
-  // Viewer mode
   document.getElementById('upload-page').style.display = 'none';
   const vp = document.getElementById('viewer-page');
   vp.style.display = 'block';
@@ -586,7 +788,7 @@ if (modelId) {
   document.getElementById('upload-page').style.display = 'flex';
 }
 
-// ── AR LAUNCH ────────────────────────────────────────────────────
+// ── NATIVE AR LAUNCH (unchanged) ─────────────────────────────────
 function launchAR() {
   const mv = document.getElementById('mv');
   if (mv && mv.canActivateAR) {
@@ -601,16 +803,336 @@ function launchAR() {
   }
 }
 
-// ── UPLOAD SIDE ──────────────────────────────────────────────────
-const dropZone    = document.getElementById('drop-zone');
-const fileInput   = document.getElementById('file-input');
-const uploadSec   = document.getElementById('upload-section');
-const progressSec = document.getElementById('progress-section');
+
+// ════════════════════════════════════════════════════════════════
+// ── MARKER AR  ──────────────────────────────────────────────────
+// Uses AR.js (jsartoolkit5) + Three.js r128 + GLTFLoader.
+// Scripts are loaded lazily on first call so they don't slow
+// down the normal viewer.
+// ════════════════════════════════════════════════════════════════
+
+let markerARLoaded  = false;   // true once CDN scripts are injected
+let markerARRunning = false;   // true while overlay is active
+let markerRenderer  = null;    // THREE.WebGLRenderer
+let markerAnimId    = null;    // requestAnimationFrame handle
+
+// Draw a small Hiro marker thumbnail into the hint canvas
+function drawHiroThumb() {
+  const canvas = document.getElementById('marker-hint-img');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const S = 52;
+  // White bg
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, S, S);
+  // Black outer border (~5px on each side → inner 42x42)
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, S, 5);
+  ctx.fillRect(0, S-5, S, 5);
+  ctx.fillRect(0, 0, 5, S);
+  ctx.fillRect(S-5, 0, 5, S);
+  // Hiro inner pattern — 6x6 grid inside the border
+  // This approximates the Hiro marker bit pattern
+  const HIRO = [
+    [0,0,0,0,0,0],
+    [0,1,0,1,0,0],
+    [0,0,0,0,1,0],
+    [0,1,0,0,0,0],
+    [0,0,1,0,1,0],
+    [0,0,0,0,0,0],
+  ];
+  const cell = (S - 10) / 6;
+  HIRO.forEach((row, r) => {
+    row.forEach((bit, c) => {
+      if (bit) {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(5 + c * cell, 5 + r * cell, cell, cell);
+      }
+    });
+  });
+}
+
+// Load AR.js + Three.js scripts once, then call callback
+function loadMarkerScripts(cb) {
+  if (markerARLoaded) { cb(); return; }
+
+  const scripts = [
+    // Three.js r128 (matches AR.js requirement)
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    // AR.js jsartoolkit5 — marker tracking core
+    'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js',
+  ];
+
+  // We load them sequentially because GLTFLoader depends on THREE
+  function loadNext(i) {
+    if (i >= scripts.length) {
+      // Now load GLTFLoader which depends on THREE
+      const gltf = document.createElement('script');
+      gltf.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+      gltf.onload = () => {
+        // Load AR.js marker tracking (separate from location-only build)
+        const ar = document.createElement('script');
+        ar.src = 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex.js';
+        ar.onload = () => { markerARLoaded = true; cb(); };
+        ar.onerror = () => showMarkerError('Failed to load AR.js');
+        document.head.appendChild(ar);
+      };
+      gltf.onerror = () => showMarkerError('Failed to load GLTFLoader');
+      document.head.appendChild(gltf);
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = scripts[i];
+    s.onload  = () => loadNext(i + 1);
+    s.onerror = () => showMarkerError('Failed to load AR script ' + i);
+    document.head.appendChild(s);
+  }
+  loadNext(0);
+}
+
+function showMarkerError(msg) {
+  const status = document.getElementById('marker-status');
+  if (status) { status.textContent = '⚠ ' + msg; status.style.color = '#ff7070'; }
+  console.error('[MarkerAR]', msg);
+}
+
+// ── OPEN MARKER AR ───────────────────────────────────────────────
+function launchMarkerAR() {
+  if (!modelId) return;
+  if (markerARRunning) return;
+
+  const overlay = document.getElementById('marker-overlay');
+  overlay.classList.add('active');
+  markerARRunning = true;
+
+  drawHiroThumb();
+
+  // Show loading state
+  const status = document.getElementById('marker-status');
+  status.textContent = 'Loading AR…';
+  status.classList.remove('found');
+
+  loadMarkerScripts(() => {
+    status.textContent = 'Requesting camera…';
+    initMarkerScene();
+  });
+}
+
+// ── CLOSE MARKER AR ──────────────────────────────────────────────
+function closeMarkerAR() {
+  if (!markerARRunning) return;
+  markerARRunning = false;
+
+  // Stop animation loop
+  if (markerAnimId) { cancelAnimationFrame(markerAnimId); markerAnimId = null; }
+
+  // Dispose renderer & stop camera
+  if (markerRenderer) {
+    markerRenderer.dispose();
+    markerRenderer = null;
+  }
+
+  // Kill any live camera streams
+  const videos = document.querySelectorAll('#marker-scene-container video');
+  videos.forEach(v => {
+    if (v.srcObject) {
+      v.srcObject.getTracks().forEach(t => t.stop());
+      v.srcObject = null;
+    }
+  });
+
+  // Clear injected scene DOM
+  document.getElementById('marker-scene-container').innerHTML = '';
+
+  // Hide overlay
+  document.getElementById('marker-overlay').classList.remove('active');
+
+  // Reset hint + status
+  document.getElementById('marker-hint').classList.remove('hidden');
+  const status = document.getElementById('marker-status');
+  status.textContent = 'Scanning for marker…';
+  status.classList.remove('found');
+}
+
+// ── INIT THREE.JS + AR.JS MARKER SCENE ───────────────────────────
+function initMarkerScene() {
+  const container = document.getElementById('marker-scene-container');
+  container.innerHTML = '';
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  // ── Renderer
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.domElement.style.position = 'absolute';
+  renderer.domElement.style.top = '0';
+  renderer.domElement.style.left = '0';
+  renderer.domElement.style.zIndex = '10000';
+  container.appendChild(renderer.domElement);
+  markerRenderer = renderer;
+
+  // ── Scene + camera
+  const scene  = new THREE.Scene();
+  const camera = new THREE.Camera();
+  scene.add(camera);
+
+  // ── Lighting
+  const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
+  scene.add(ambLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(1, 2, 1);
+  scene.add(dirLight);
+
+  // ── AR.js context
+  const arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
+  const arToolkitContext = new THREEx.ArToolkitContext({
+    cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/master/data/data/camera_para.dat',
+    detectionMode: 'mono',
+  });
+
+  arToolkitSource.init(() => {
+    // Position the video element behind our canvas
+    const video = arToolkitSource.domElement;
+    video.style.position = 'absolute';
+    video.style.top = '0';
+    video.style.left = '0';
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.objectFit = 'cover';
+    video.style.zIndex = '9999';
+    container.insertBefore(video, container.firstChild);
+
+    // Update renderer size to match video once it's known
+    setTimeout(() => onResize(), 500);
+    document.getElementById('marker-status').textContent = 'Scanning for marker…';
+  });
+
+  arToolkitContext.init(() => {
+    camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+  });
+
+  // ── Marker root — the GLB will be parented to this
+  const markerRoot = new THREE.Group();
+  scene.add(markerRoot);
+
+  const arMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+    type: 'preset',
+    patternUrl: null,
+    preset: 'hiro',
+  });
+
+  // Track marker visibility for hint card / status
+  let modelAdded = false;
+  let lastVisible = false;
+
+  // ── Load GLB model
+  const loader = new THREE.GLTFLoader();
+  const modelUrl = '/model/' + modelId;
+  let loadedModel = null;
+
+  loader.load(
+    modelUrl,
+    (gltf) => {
+      loadedModel = gltf.scene;
+
+      // Auto-scale to fit nicely on the marker (marker is ~1 unit wide in AR space)
+      const box = new THREE.Box3().setFromObject(loadedModel);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 0.8 / maxDim;   // target: ~0.8 marker units
+      loadedModel.scale.setScalar(scale);
+
+      // Centre model horizontally on marker, sit on top of it
+      const center = box.getCenter(new THREE.Vector3());
+      loadedModel.position.set(
+        -center.x * scale,
+        -box.min.y * scale,  // lift so bottom sits at y=0
+        -center.z * scale
+      );
+
+      modelAdded = true;
+    },
+    undefined,
+    (err) => { showMarkerError('Could not load model: ' + err.message); }
+  );
+
+  // ── Resize handler
+  function onResize() {
+    if (!markerARRunning) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    renderer.setSize(w, h);
+    if (arToolkitSource.domElement) {
+      arToolkitSource.onResizeElement();
+      arToolkitSource.copyElementSizeTo(renderer.domElement);
+    }
+    if (arToolkitContext.arController !== null) {
+      arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+    }
+  }
+  window.addEventListener('resize', onResize);
+
+  // ── Render loop
+  function animate() {
+    if (!markerARRunning) return;
+    markerAnimId = requestAnimationFrame(animate);
+
+    if (arToolkitSource.ready) {
+      arToolkitContext.update(arToolkitSource.domElement);
+
+      // Detect marker visibility via matrix change
+      const isVisible = markerRoot.visible;
+
+      if (isVisible !== lastVisible) {
+        lastVisible = isVisible;
+        const hint   = document.getElementById('marker-hint');
+        const status = document.getElementById('marker-status');
+
+        if (isVisible) {
+          hint.classList.add('hidden');
+          status.textContent = '✓ Marker found';
+          status.classList.add('found');
+
+          // Attach model to marker when first seen
+          if (loadedModel && modelAdded && !markerRoot.children.includes(loadedModel)) {
+            markerRoot.add(loadedModel);
+          }
+        } else {
+          hint.classList.remove('hidden');
+          status.textContent = 'Scanning for marker…';
+          status.classList.remove('found');
+        }
+      }
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  // Cleanup resize listener on close
+  const origClose = window.closeMarkerAR;
+  window.closeMarkerAR = function() {
+    window.removeEventListener('resize', onResize);
+    origClose && origClose();
+    // Restore for future opens
+    window.closeMarkerAR = origClose;
+  };
+}
+
+
+// ── UPLOAD SIDE (unchanged) ───────────────────────────────────────
+const dropZone     = document.getElementById('drop-zone');
+const fileInput    = document.getElementById('file-input');
+const uploadSec    = document.getElementById('upload-section');
+const progressSec  = document.getElementById('progress-section');
 const progressFill = document.getElementById('progress-fill');
 const progressTxt  = document.getElementById('progress-text');
-const qrSection   = document.getElementById('qr-section');
-const howSteps    = document.getElementById('how-steps');
-const errorBox    = document.getElementById('error-box');
+const qrSection    = document.getElementById('qr-section');
+const howSteps     = document.getElementById('how-steps');
+const errorBox     = document.getElementById('error-box');
 
 dropZone.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', e => {
@@ -648,8 +1170,8 @@ async function handleFile(file) {
     return;
   }
 
-  uploadSec.style.display = 'none';
-  howSteps.style.opacity  = '0';
+  uploadSec.style.display   = 'none';
+  howSteps.style.opacity    = '0';
   progressSec.style.display = 'block';
   setProgress(8, 'Uploading model…');
 
@@ -683,7 +1205,6 @@ async function handleFile(file) {
 
     setProgress(100, 'Generating QR code…');
     await sleep(250);
-
     showQR(result.id, file.name);
 
   } catch (err) {
@@ -705,8 +1226,8 @@ function showQR(id, fileName) {
   progressSec.style.display = 'none';
   howSteps.style.display    = 'none';
 
-  const base     = location.origin + location.pathname;
-  const name     = encodeURIComponent(fileName.replace(/\.(glb|gltf)$/i, ''));
+  const base      = location.origin + location.pathname;
+  const name      = encodeURIComponent(fileName.replace(/\.(glb|gltf)$/i, ''));
   const viewerURL = `${base}?m=${encodeURIComponent(id)}&n=${name}`;
 
   const wrap = document.getElementById('qr-canvas-wrap');
@@ -725,11 +1246,11 @@ function showQR(id, fileName) {
 }
 
 function resetToUpload() {
-  qrSection.style.display   = 'none';
-  uploadSec.style.display   = 'block';
-  howSteps.style.display    = 'flex';
-  howSteps.style.opacity    = '1';
-  fileInput.value           = '';
+  qrSection.style.display  = 'none';
+  uploadSec.style.display  = 'block';
+  howSteps.style.display   = 'flex';
+  howSteps.style.opacity   = '1';
+  fileInput.value          = '';
   hideError();
 }
 </script>
